@@ -21,10 +21,17 @@ const TestCaseModal: FC<TestCaseModalProps> = ({
     if (isOpen && initialData && mode === "edit") {
       const form = document.getElementById("testCaseForm") as HTMLFormElement;
       if (form) {
-        form.name.value = initialData.name;
-        form.description.value = initialData.description;
-        form.priority.value = initialData.priority;
-        form.status.value = initialData.status;
+        const nameInput = form.querySelector<HTMLInputElement>("#name");
+        const descriptionInput =
+          form.querySelector<HTMLTextAreaElement>("#description");
+        const prioritySelect =
+          form.querySelector<HTMLSelectElement>("#priority");
+        const statusSelect = form.querySelector<HTMLSelectElement>("#status");
+
+        if (nameInput) nameInput.value = initialData.name;
+        if (descriptionInput) descriptionInput.value = initialData.description;
+        if (prioritySelect) prioritySelect.value = initialData.priority;
+        if (statusSelect) statusSelect.value = initialData.status;
       }
     }
   }, [isOpen, initialData, mode]);
@@ -33,17 +40,23 @@ const TestCaseModal: FC<TestCaseModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    onSubmit({
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const status = formData.get("status") as
+      | "not_started"
+      | "in_progress"
+      | "completed"
+      | "failed";
+
+    const data = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       priority: formData.get("priority") as "high" | "medium" | "low",
-      status: formData.get("status") as
-        | "not_started"
-        | "in_progress"
-        | "completed"
-        | "failed",
-    });
+      status: status,
+    };
+
+    onSubmit(data);
   };
 
   return (

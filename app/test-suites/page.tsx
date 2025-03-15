@@ -53,6 +53,26 @@ const initialTestSuites: TestSuite[] = [
   },
 ];
 
+// ステータスに応じた表示テキストとスタイルを定義
+const statusConfig = {
+  not_started: {
+    text: "未実行",
+    className: "bg-gray-100 text-gray-800",
+  },
+  in_progress: {
+    text: "実行中",
+    className: "bg-yellow-100 text-yellow-800",
+  },
+  completed: {
+    text: "成功",
+    className: "bg-green-100 text-green-800",
+  },
+  failed: {
+    text: "失敗",
+    className: "bg-red-100 text-red-800",
+  },
+};
+
 export default function TestSuitesPage() {
   const {
     testSuites,
@@ -297,18 +317,10 @@ export default function TestSuitesPage() {
                           <td className="px-6 py-4">
                             <span
                               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                testCase.status === "completed"
-                                  ? "bg-green-100 text-green-800"
-                                  : testCase.status === "failed"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                statusConfig[testCase.status].className
                               }`}
                             >
-                              {testCase.status === "completed"
-                                ? "成功"
-                                : testCase.status === "failed"
-                                  ? "失敗"
-                                  : "実行中"}
+                              {statusConfig[testCase.status].text}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">
