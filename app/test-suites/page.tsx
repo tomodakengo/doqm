@@ -5,6 +5,7 @@ import {
   Plus,
   FolderTree,
   ChevronRight,
+  ChevronDown,
   MoreVertical,
   File,
   Trash2,
@@ -32,15 +33,18 @@ const initialTestSuites: TestSuite[] = [
         id: 11,
         name: "ログイン機能",
         description: "ユーザーログインに関するテストケース",
-        testCases: 12,
+        testCases: [],
+        parentId: 1,
       },
       {
         id: 12,
         name: "パスワードリセット",
         description: "パスワードリセット機能のテストケース",
-        testCases: 8,
+        testCases: [],
+        parentId: 1,
       },
     ],
+    testCases: [],
   },
   {
     id: 2,
@@ -51,9 +55,11 @@ const initialTestSuites: TestSuite[] = [
         id: 21,
         name: "プロフィール編集",
         description: "ユーザープロフィール編集機能のテストケース",
-        testCases: 15,
+        testCases: [],
+        parentId: 2,
       },
     ],
+    testCases: [],
   },
 ];
 
@@ -89,6 +95,7 @@ export default function TestSuitesPage() {
   const {
     testSuites,
     selectedSuiteId,
+    selectedChildId,
     isCreateModalOpen,
     setTestSuites,
     selectSuite,
@@ -120,6 +127,9 @@ export default function TestSuitesPage() {
     TestCase | undefined
   >();
 
+  // スイートの展開/折りたたみを切り替える
+  const [expandedSuites, setExpandedSuites] = useState<number[]>([]);
+
   // 初期データのロード
   useEffect(() => {
     setTestSuites(initialTestSuites);
@@ -129,6 +139,33 @@ export default function TestSuitesPage() {
   const selectedSuite = testSuites.find(
     (suite) => suite.id === selectedSuiteId
   );
+
+  // スイートの展開/折りたたみを切り替える
+  const toggleSuiteExpansion = (suiteId: number) => {
+    setExpandedSuites((prev) =>
+      prev.includes(suiteId)
+        ? prev.filter((id) => id !== suiteId)
+        : [...prev, suiteId]
+    );
+  };
+
+  // 選択されているスイートまたは子スイートを取得
+  const getSelectedTestCase = (): TestCase[] => {
+    const suite = testSuites.find((s) => s.id === selectedSuiteId);
+    if (!suite) return [];
+
+    if (selectedChildId) {
+      const child = suite.children.find((c) => c.id === selectedChildId);
+      return child?.testCases || [];
+    }
+    return suite.testCases || [];
+  };
+
+  // 選択されているスイートまたは子スイートのテストケース数を取得
+  const getTestCaseCount = (child: TestSuiteChild): number => {
+    if (!child.testCases) return 0;
+    return child.testCases.length;
+  };
 
   const handleCreateSuite = (data: {
     name: string;
@@ -146,12 +183,19 @@ export default function TestSuitesPage() {
   };
 
   // テストケースの作成・編集ハンドラー
-  const handleTestCaseSubmit = (data: Omit<TestCase, "id">) => {
+  const handleTestCaseSubmit = (
+    data: Omit<TestCase, "id" | "status" | "lastExecuted" | "executionHistory">
+  ) => {
     if (selectedSuiteId) {
       if (testCaseModalMode === "create") {
-        addTestCase(selectedSuiteId, data);
+        addTestCase(selectedSuiteId, selectedChildId, data);
       } else if (editingTestCase) {
-        updateTestCase(selectedSuiteId, editingTestCase.id, data);
+        updateTestCase(
+          selectedSuiteId,
+          selectedChildId,
+          editingTestCase.id,
+          data
+        );
       }
       setIsTestCaseModalOpen(false);
       setEditingTestCase(undefined);
@@ -181,7 +225,8 @@ export default function TestSuitesPage() {
   // テストケースの削除を実行
   const handleDeleteConfirm = () => {
     if (selectedSuiteId && deletingTestCase) {
-      deleteTestCase(selectedSuiteId, deletingTestCase.id);
+      deleteTestCase(selectedSuiteId, selectedChildId, deletingTestCase.id);
+      setIsDeleteModalOpen(false);
       setDeletingTestCase(undefined);
     }
   };
@@ -194,11 +239,16 @@ export default function TestSuitesPage() {
 
   // テストケース実行結果を記録
   const handleExecuteSubmit = (data: {
-    status: "completed" | "failed";
+    status: "completed" | "failed" | "pending" | "skipped";
     comment: string;
   }) => {
     if (selectedSuiteId && executingTestCase) {
-      executeTestCase(selectedSuiteId, executingTestCase.id, data);
+      executeTestCase(
+        selectedSuiteId,
+        selectedChildId,
+        executingTestCase.id,
+        data
+      );
       setIsExecuteModalOpen(false);
       setExecutingTestCase(undefined);
     }
@@ -236,30 +286,55 @@ export default function TestSuitesPage() {
               {testSuites.map((suite: TestSuite) => (
                 <div key={suite.id}>
                   <div
-                    className={`flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg cursor-pointer ${
-                      selectedSuiteId === suite.id ? "bg-gray-50" : ""
+                    className={`flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer ${
+                      selectedSuiteId === suite.id && !selectedChildId
+                        ? "bg-gray-50"
+                        : ""
                     }`}
-                    onClick={() => selectSuite(suite.id)}
                   >
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{suite.name}</span>
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    {suite.children.map((child: TestSuiteChild) => (
-                      <div
-                        key={child.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    <div
+                      className="flex items-center space-x-2 flex-1"
+                      onClick={() => selectSuite(suite.id)}
+                    >
+                      <span className="text-gray-700">{suite.name}</span>
+                    </div>
+                    {suite.children.length > 0 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSuiteExpansion(suite.id);
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
                       >
-                        <div className="flex items-center space-x-2">
-                          <File className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-600">{child.name}</span>
-                        </div>
-                        <span className="text-xs text-gray-400">
-                          {child.testCases}件
-                        </span>
-                      </div>
-                    ))}
+                        {expandedSuites.includes(suite.id) ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
                   </div>
+                  {expandedSuites.includes(suite.id) && (
+                    <div className="ml-6 space-y-1">
+                      {suite.children.map((child: TestSuiteChild) => (
+                        <div
+                          key={child.id}
+                          className={`flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer ${
+                            selectedChildId === child.id ? "bg-gray-50" : ""
+                          }`}
+                          onClick={() => selectSuite(suite.id, child.id)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <File className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-600">{child.name}</span>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {getTestCaseCount(child)}件
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -344,7 +419,7 @@ export default function TestSuitesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {(selectedSuite.testCases || []).map(
+                    {getSelectedTestCase().map(
                       (testCase: TestCase, index: number) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-6 py-4">

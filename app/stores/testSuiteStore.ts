@@ -20,7 +20,8 @@ export interface TestSuiteChild {
     id: number;
     name: string;
     description: string;
-    testCases: number;
+    testCases?: TestCase[];
+    parentId: number;
 }
 
 export interface TestSuite {
@@ -34,28 +35,40 @@ export interface TestSuite {
 interface TestSuiteStore {
     testSuites: TestSuite[];
     selectedSuiteId: number | null;
+    selectedChildId: number | null;
     isCreateModalOpen: boolean;
     // アクション
     setTestSuites: (suites: TestSuite[]) => void;
     addTestSuite: (suite: Omit<TestSuite, 'id'>) => void;
     updateTestSuite: (id: number, suite: Partial<TestSuite>) => void;
     deleteTestSuite: (id: number) => void;
-    selectSuite: (id: number) => void;
+    selectSuite: (id: number, childId?: number) => void;
     setCreateModalOpen: (isOpen: boolean) => void;
     // テストケース関連
-    addTestCase: (suiteId: number, testCase: Omit<TestCase, 'id'>) => void;
-    updateTestCase: (suiteId: number, testCaseId: number, updates: Partial<TestCase>) => void;
-    deleteTestCase: (suiteId: number, testCaseId: number) => void;
+    addTestCase: (
+        suiteId: number,
+        childId: number | null,
+        testCase: Omit<TestCase, 'id' | 'status' | 'lastExecuted' | 'executionHistory'>
+    ) => void;
+    updateTestCase: (
+        suiteId: number,
+        childId: number | null,
+        testCaseId: number,
+        updates: Partial<TestCase>
+    ) => void;
+    deleteTestCase: (suiteId: number, childId: number | null, testCaseId: number) => void;
     executeTestCase: (
         suiteId: number,
+        childId: number | null,
         testCaseId: number,
-        result: { status: 'completed' | 'failed'; comment: string }
+        result: { status: 'completed' | 'failed' | 'pending' | 'skipped'; comment: string }
     ) => void;
 }
 
 const useTestSuiteStore = create<TestSuiteStore>((set) => ({
     testSuites: [],
     selectedSuiteId: null,
+    selectedChildId: null,
     isCreateModalOpen: false,
 
     setTestSuites: (suites) => set({ testSuites: suites }),
@@ -85,82 +98,167 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
             selectedSuiteId: state.selectedSuiteId === id ? null : state.selectedSuiteId,
         })),
 
-    selectSuite: (id) => set({ selectedSuiteId: id }),
+    selectSuite: (id, childId) => set({ selectedSuiteId: id, selectedChildId: childId || null }),
 
     setCreateModalOpen: (isOpen) => set({ isCreateModalOpen: isOpen }),
 
-    addTestCase: (suiteId, testCase) =>
+    addTestCase: (suiteId, childId, testCase) =>
         set((state) => ({
             testSuites: state.testSuites.map((suite) => {
                 if (suite.id === suiteId) {
-                    const newTestCase = {
-                        ...testCase,
-                        id: Math.max(0, ...(suite.testCases?.map((tc) => tc.id) || [-1])) + 1,
-                        status: 'not_started' as const,
-                    };
-                    return {
-                        ...suite,
-                        testCases: [...(suite.testCases || []), newTestCase],
-                    };
+                    if (childId) {
+                        return {
+                            ...suite,
+                            children: suite.children.map((child) => {
+                                if (child.id === childId) {
+                                    const newTestCase = {
+                                        ...testCase,
+                                        id: Math.max(0, ...(child.testCases?.map((tc) => tc.id) || [-1])) + 1,
+                                        status: 'not_started' as const,
+                                    };
+                                    return {
+                                        ...child,
+                                        testCases: [...(child.testCases || []), newTestCase],
+                                    };
+                                }
+                                return child;
+                            }),
+                        };
+                    } else {
+                        const newTestCase = {
+                            ...testCase,
+                            id: Math.max(0, ...(suite.testCases?.map((tc) => tc.id) || [-1])) + 1,
+                            status: 'not_started' as const,
+                        };
+                        return {
+                            ...suite,
+                            testCases: [...(suite.testCases || []), newTestCase],
+                        };
+                    }
                 }
                 return suite;
             }),
         })),
 
-    updateTestCase: (suiteId, testCaseId, updates) =>
+    updateTestCase: (suiteId, childId, testCaseId, updates) =>
         set((state) => ({
             testSuites: state.testSuites.map((suite) => {
                 if (suite.id === suiteId) {
-                    return {
-                        ...suite,
-                        testCases: suite.testCases?.map((tc) =>
-                            tc.id === testCaseId ? { ...tc, ...updates } : tc
-                        ),
-                    };
+                    if (childId) {
+                        return {
+                            ...suite,
+                            children: suite.children.map((child) => {
+                                if (child.id === childId) {
+                                    return {
+                                        ...child,
+                                        testCases: child.testCases?.map((tc) =>
+                                            tc.id === testCaseId ? { ...tc, ...updates } : tc
+                                        ),
+                                    };
+                                }
+                                return child;
+                            }),
+                        };
+                    } else {
+                        return {
+                            ...suite,
+                            testCases: suite.testCases?.map((tc) =>
+                                tc.id === testCaseId ? { ...tc, ...updates } : tc
+                            ),
+                        };
+                    }
                 }
                 return suite;
             }),
         })),
 
-    deleteTestCase: (suiteId, testCaseId) =>
+    deleteTestCase: (suiteId, childId, testCaseId) =>
         set((state) => ({
             testSuites: state.testSuites.map((suite) => {
                 if (suite.id === suiteId) {
-                    return {
-                        ...suite,
-                        testCases: suite.testCases?.filter((tc) => tc.id !== testCaseId),
-                    };
+                    if (childId) {
+                        return {
+                            ...suite,
+                            children: suite.children.map((child) => {
+                                if (child.id === childId) {
+                                    return {
+                                        ...child,
+                                        testCases: child.testCases?.filter((tc) => tc.id !== testCaseId),
+                                    };
+                                }
+                                return child;
+                            }),
+                        };
+                    } else {
+                        return {
+                            ...suite,
+                            testCases: suite.testCases?.filter((tc) => tc.id !== testCaseId),
+                        };
+                    }
                 }
                 return suite;
             }),
         })),
 
-    executeTestCase: (suiteId, testCaseId, result) =>
+    executeTestCase: (suiteId, childId, testCaseId, result) =>
         set((state) => ({
             testSuites: state.testSuites.map((suite) => {
                 if (suite.id === suiteId) {
-                    return {
-                        ...suite,
-                        testCases: suite.testCases?.map((tc) => {
-                            if (tc.id === testCaseId) {
-                                const now = new Date().toISOString();
-                                return {
-                                    ...tc,
-                                    status: result.status,
-                                    lastExecuted: now,
-                                    executionHistory: [
-                                        ...(tc.executionHistory || []),
-                                        {
-                                            date: now,
-                                            status: result.status,
-                                            comment: result.comment,
-                                        },
-                                    ],
-                                };
-                            }
-                            return tc;
-                        }),
-                    };
+                    if (childId) {
+                        return {
+                            ...suite,
+                            children: suite.children.map((child) => {
+                                if (child.id === childId) {
+                                    return {
+                                        ...child,
+                                        testCases: child.testCases?.map((tc) => {
+                                            if (tc.id === testCaseId) {
+                                                const now = new Date().toISOString();
+                                                return {
+                                                    ...tc,
+                                                    status: result.status,
+                                                    lastExecuted: now,
+                                                    executionHistory: [
+                                                        ...(tc.executionHistory || []),
+                                                        {
+                                                            date: now,
+                                                            status: result.status,
+                                                            comment: result.comment,
+                                                        },
+                                                    ],
+                                                };
+                                            }
+                                            return tc;
+                                        }),
+                                    };
+                                }
+                                return child;
+                            }),
+                        };
+                    } else {
+                        return {
+                            ...suite,
+                            testCases: suite.testCases?.map((tc) => {
+                                if (tc.id === testCaseId) {
+                                    const now = new Date().toISOString();
+                                    return {
+                                        ...tc,
+                                        status: result.status,
+                                        lastExecuted: now,
+                                        executionHistory: [
+                                            ...(tc.executionHistory || []),
+                                            {
+                                                date: now,
+                                                status: result.status,
+                                                comment: result.comment,
+                                            },
+                                        ],
+                                    };
+                                }
+                                return tc;
+                            }),
+                        };
+                    }
                 }
                 return suite;
             }),
