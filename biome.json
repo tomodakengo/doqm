@@ -1,0 +1,17 @@
+{
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noArrayIndexKey": "off"
+			},
+			"style": {
+				"useNamingConvention": {
+					"level": "off",
+					"options": {
+						"strictCase": false
+					}
+				}
+			}
+		}
+	}
+}
