@@ -67,53 +67,6 @@ export interface Database {
                     status?: string
                 }
             }
-            test_cases: {
-                Row: {
-                    id: string
-                    suite_id: string
-                    title: string
-                    description: string | null
-                    preconditions: string | null
-                    steps: string[] | null
-                    expected_result: string | null
-                    priority: string
-                    status: string
-                    created_by: string
-                    created_at: string
-                    updated_at: string
-                    version: string
-                }
-                Insert: {
-                    id?: string
-                    suite_id: string
-                    title: string
-                    description?: string | null
-                    preconditions?: string | null
-                    steps?: string[] | null
-                    expected_result?: string | null
-                    priority?: string
-                    status?: string
-                    created_by: string
-                    created_at?: string
-                    updated_at?: string
-                    version?: string
-                }
-                Update: {
-                    id?: string
-                    suite_id?: string
-                    title?: string
-                    description?: string | null
-                    preconditions?: string | null
-                    steps?: string[] | null
-                    expected_result?: string | null
-                    priority?: string
-                    status?: string
-                    created_by?: string
-                    created_at?: string
-                    updated_at?: string
-                    version?: string
-                }
-            }
             execution_history: {
                 Row: {
                     id: string
