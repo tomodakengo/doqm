@@ -7,10 +7,12 @@ import {
   ChevronRight,
   MoreVertical,
   File,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import CreateSuiteModal from "../components/test-suites/CreateSuiteModal";
 import TestCaseModal from "../components/test-cases/TestCaseModal";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 import useTestSuiteStore, {
   TestSuite,
   TestSuiteChild,
@@ -83,6 +85,7 @@ export default function TestSuitesPage() {
     setCreateModalOpen,
     addTestCase,
     updateTestCase,
+    deleteTestCase,
   } = useTestSuiteStore();
 
   // テストケースモーダルの状態
@@ -93,6 +96,12 @@ export default function TestSuitesPage() {
   const [testCaseModalMode, setTestCaseModalMode] = useState<"create" | "edit">(
     "create"
   );
+
+  // 削除確認モーダルの状態
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingTestCase, setDeletingTestCase] = useState<
+    TestCase | undefined
+  >();
 
   // 初期データのロード
   useEffect(() => {
@@ -144,6 +153,20 @@ export default function TestSuitesPage() {
     setEditingTestCase(undefined);
     setTestCaseModalMode("create");
     setIsTestCaseModalOpen(true);
+  };
+
+  // テストケース削除の確認モーダルを開く
+  const handleDeleteClick = (testCase: TestCase) => {
+    setDeletingTestCase(testCase);
+    setIsDeleteModalOpen(true);
+  };
+
+  // テストケースの削除を実行
+  const handleDeleteConfirm = () => {
+    if (selectedSuiteId && deletingTestCase) {
+      deleteTestCase(selectedSuiteId, deletingTestCase.id);
+      setDeletingTestCase(undefined);
+    }
   };
 
   return (
@@ -327,12 +350,20 @@ export default function TestSuitesPage() {
                             {testCase.lastExecuted || "-"}
                           </td>
                           <td className="px-6 py-4 text-right text-sm font-medium">
-                            <button
-                              onClick={() => handleEditTestCase(testCase)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              編集
-                            </button>
+                            <div className="flex items-center justify-end space-x-3">
+                              <button
+                                onClick={() => handleEditTestCase(testCase)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                編集
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(testCase)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -366,6 +397,18 @@ export default function TestSuitesPage() {
         onSubmit={handleTestCaseSubmit}
         initialData={editingTestCase}
         mode={testCaseModalMode}
+      />
+
+      <ConfirmDialog
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingTestCase(undefined);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="テストケースの削除"
+        message={`「${deletingTestCase?.name}」を削除してもよろしいですか？この操作は取り消せません。`}
+        type="danger"
       />
     </MainLayout>
   );
