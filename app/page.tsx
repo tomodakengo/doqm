@@ -15,9 +15,9 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* ヘッダー */}
       <header className="fixed w-full bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="text-xl font-bold text-gray-900">TestDoc AI</div>
+            <div className="text-xl font-bold text-gray-900">doqm</div>
             <nav className="hidden md:flex space-x-8">
               <Link
                 href="/features"
