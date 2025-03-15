@@ -75,6 +75,14 @@ const statusConfig = {
     text: "失敗",
     className: "bg-red-100 text-red-800",
   },
+  pending: {
+    text: "保留",
+    className: "bg-orange-100 text-orange-800",
+  },
+  skipped: {
+    text: "スキップ",
+    className: "bg-gray-100 text-gray-600",
+  },
 };
 
 export default function TestSuitesPage() {
@@ -379,16 +387,16 @@ export default function TestSuitesPage() {
                           <td className="px-6 py-4 text-right text-sm font-medium">
                             <div className="flex items-center justify-end space-x-3">
                               <button
-                                onClick={() => handleEditTestCase(testCase)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                編集
-                              </button>
-                              <button
                                 onClick={() => handleExecuteClick(testCase)}
                                 className="text-green-600 hover:text-green-900"
                               >
                                 <PlayCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEditTestCase(testCase)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                編集
                               </button>
                               <button
                                 onClick={() => handleDeleteClick(testCase)}

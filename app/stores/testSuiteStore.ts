@@ -5,11 +5,13 @@ export interface TestCase {
     name: string;
     description: string;
     priority: 'high' | 'medium' | 'low';
-    status: 'not_started' | 'in_progress' | 'completed' | 'failed';
+    status: 'not_started' | 'in_progress' | 'completed' | 'failed' | 'pending' | 'skipped';
+    steps: string[];
+    expectedResults: string;
     lastExecuted?: string;
     executionHistory?: {
         date: string;
-        status: 'completed' | 'failed';
+        status: 'completed' | 'failed' | 'pending' | 'skipped';
         comment: string;
     }[];
 }

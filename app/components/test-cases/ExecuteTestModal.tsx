@@ -1,11 +1,21 @@
 import { FC } from "react";
-import { X, PlayCircle, CheckCircle, XCircle } from "lucide-react";
+import {
+  X,
+  PlayCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  SkipForward,
+} from "lucide-react";
 import { TestCase } from "@/app/stores/testSuiteStore";
 
 interface ExecuteTestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { status: "completed" | "failed"; comment: string }) => void;
+  onSubmit: (data: {
+    status: "completed" | "failed" | "pending" | "skipped";
+    comment: string;
+  }) => void;
   testCase: TestCase;
 }
 
@@ -23,7 +33,11 @@ const ExecuteTestModal: FC<ExecuteTestModalProps> = ({
     const formData = new FormData(form);
 
     onSubmit({
-      status: formData.get("status") as "completed" | "failed",
+      status: formData.get("status") as
+        | "completed"
+        | "failed"
+        | "pending"
+        | "skipped",
       comment: formData.get("comment") as string,
     });
   };
@@ -55,18 +69,15 @@ const ExecuteTestModal: FC<ExecuteTestModalProps> = ({
           <div className="bg-gray-50 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 mb-2">テスト手順</h4>
             <ol className="list-decimal list-inside space-y-2 text-gray-600">
-              <li>アプリケーションにログインする</li>
-              <li>必要な初期データを準備する</li>
-              <li>テスト対象の機能を実行する</li>
-              <li>結果を確認する</li>
+              {testCase.steps.map((step, index) => (
+                <li key={index}>{step}</li>
+              ))}
             </ol>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 mb-2">期待される結果</h4>
-            <p className="text-gray-600">
-              正しい結果が表示され、エラーが発生しないこと
-            </p>
+            <p className="text-gray-600">{testCase.expectedResults}</p>
           </div>
 
           <div>
@@ -95,6 +106,26 @@ const ExecuteTestModal: FC<ExecuteTestModalProps> = ({
                 <XCircle className="w-5 h-5 text-red-600" />
                 <span>失敗</span>
               </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="status"
+                  value="pending"
+                  className="text-blue-600"
+                />
+                <Clock className="w-5 h-5 text-yellow-600" />
+                <span>保留</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="status"
+                  value="skipped"
+                  className="text-blue-600"
+                />
+                <SkipForward className="w-5 h-5 text-gray-600" />
+                <span>スキップ</span>
+              </label>
             </div>
           </div>
 
@@ -109,7 +140,7 @@ const ExecuteTestModal: FC<ExecuteTestModalProps> = ({
               id="comment"
               name="comment"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="実行結果に関するコメントを入力してください"
             />
           </div>
