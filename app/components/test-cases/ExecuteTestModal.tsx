@@ -53,6 +53,7 @@ const ExecuteTestModal: FC<ExecuteTestModalProps> = ({
 						</h2>
 					</div>
 					<button
+						type="button"
 						onClick={onClose}
 						className="text-gray-400 hover:text-gray-600"
 					>
@@ -81,6 +82,7 @@ const ExecuteTestModal: FC<ExecuteTestModalProps> = ({
 					</div>
 
 					<div>
+						{/* // biome-ignore lint/a11y/noLabelWithoutControl */}
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							実行結果
 						</label>
