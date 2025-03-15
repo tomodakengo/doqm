@@ -10,12 +10,14 @@ import {
   File,
   Trash2,
   PlayCircle,
+  History,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import CreateSuiteModal from "../components/test-suites/CreateSuiteModal";
 import TestCaseModal from "../components/test-cases/TestCaseModal";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import ExecuteTestModal from "../components/test-cases/ExecuteTestModal";
+import TestHistoryModal from "../components/test-cases/TestHistoryModal";
 import useTestSuiteStore, {
   TestSuite,
   TestSuiteChild,
@@ -129,6 +131,12 @@ export default function TestSuitesPage() {
 
   // スイートの展開/折りたたみを切り替える
   const [expandedSuites, setExpandedSuites] = useState<number[]>([]);
+
+  // 履歴モーダルの状態
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedHistoryTestCase, setSelectedHistoryTestCase] = useState<
+    TestCase | undefined
+  >();
 
   // 初期データのロード
   useEffect(() => {
@@ -290,6 +298,12 @@ export default function TestSuitesPage() {
       setIsExecuteModalOpen(false);
       setExecutingTestCase(undefined);
     }
+  };
+
+  // 履歴モーダルを開く
+  const handleHistoryClick = (testCase: TestCase) => {
+    setSelectedHistoryTestCase(testCase);
+    setIsHistoryModalOpen(true);
   };
 
   return (
@@ -475,7 +489,7 @@ export default function TestSuitesPage() {
                   <tbody className="divide-y divide-gray-200">
                     {getSelectedTestCase().map(
                       (testCase: TestCase, index: number) => (
-                        <tr key={index} className="hover:bg-gray-50">
+                        <tr key={testCase.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
                             <div className="text-sm font-medium text-gray-900">
                               {testCase.name}
@@ -520,6 +534,12 @@ export default function TestSuitesPage() {
                                 className="text-green-600 hover:text-green-900"
                               >
                                 <PlayCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleHistoryClick(testCase)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                <History className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleEditTestCase(testCase)}
@@ -589,6 +609,15 @@ export default function TestSuitesPage() {
         }}
         onSubmit={handleExecuteSubmit}
         testCase={executingTestCase as TestCase}
+      />
+
+      <TestHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+          setSelectedHistoryTestCase(undefined);
+        }}
+        testCase={selectedHistoryTestCase as TestCase}
       />
     </MainLayout>
   );
