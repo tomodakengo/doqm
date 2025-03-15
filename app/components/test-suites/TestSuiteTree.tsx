@@ -11,14 +11,14 @@ type TestSuiteWithChildren = TestSuite & {
 interface TestSuiteTreeProps {
   suites: TestSuiteWithChildren[];
   onSelect?: (suite: TestSuite) => void;
-  selectedId?: string;
+  selectedId?: number;
 }
 
 interface TestSuiteNodeProps {
   suite: TestSuiteWithChildren;
   level: number;
   onSelect?: (suite: TestSuite) => void;
-  selectedId?: string;
+  selectedId?: number;
 }
 
 function TestSuiteNode({
