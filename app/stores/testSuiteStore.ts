@@ -74,16 +74,41 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
     setTestSuites: (suites) => set({ testSuites: suites }),
 
     addTestSuite: (suite) =>
-        set((state) => ({
-            testSuites: [
-                ...state.testSuites,
-                {
-                    ...suite,
-                    id: Math.max(0, ...state.testSuites.map((s) => s.id)) + 1,
-                    children: [],
-                },
-            ],
-        })),
+        set((state) => {
+            if (suite.parentId) {
+                // 親スイートの子として追加
+                return {
+                    testSuites: state.testSuites.map((existingSuite) => {
+                        if (existingSuite.id === suite.parentId) {
+                            const newChild: TestSuiteChild = {
+                                id: Math.max(0, ...existingSuite.children.map((c) => c.id), ...state.testSuites.flatMap(s => s.children.map(c => c.id))) + 1,
+                                name: suite.name,
+                                description: suite.description,
+                                testCases: [],
+                                parentId: existingSuite.id,
+                            };
+                            return {
+                                ...existingSuite,
+                                children: [...existingSuite.children, newChild],
+                            };
+                        }
+                        return existingSuite;
+                    }),
+                };
+            }
+
+            // 新しい親スイートとして追加
+            const newSuite: TestSuite = {
+                id: Math.max(0, ...state.testSuites.map((s) => s.id)) + 1,
+                name: suite.name,
+                description: suite.description,
+                children: [],
+                testCases: [],
+            };
+            return {
+                testSuites: [...state.testSuites, newSuite],
+            };
+        }),
 
     updateTestSuite: (id, updatedSuite) =>
         set((state) => ({
