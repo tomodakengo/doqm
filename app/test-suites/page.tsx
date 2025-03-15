@@ -167,16 +167,54 @@ export default function TestSuitesPage() {
     return child.testCases.length;
   };
 
+  // 選択されているスイートまたは子スイートの情報を取得
+  const getSelectedSuiteInfo = () => {
+    const suite = testSuites.find((s) => s.id === selectedSuiteId);
+    if (!suite) return null;
+
+    if (selectedChildId) {
+      const child = suite.children.find((c) => c.id === selectedChildId);
+      if (child) {
+        return {
+          name: child.name,
+          description: child.description,
+          testCases: child.testCases || [],
+        };
+      }
+    }
+    return {
+      name: suite.name,
+      description: suite.description,
+      testCases: suite.testCases || [],
+    };
+  };
+
+  // テストケースの統計情報を計算
+  const calculateTestStats = (testCases: TestCase[]) => {
+    const totalTests = testCases.length;
+    const executedTests = testCases.filter((tc) => tc.lastExecuted).length;
+    const successfulTests = testCases.filter(
+      (tc) => tc.status === "completed"
+    ).length;
+    const successRate =
+      totalTests > 0 ? Math.round((successfulTests / totalTests) * 100) : 0;
+
+    return {
+      totalTests,
+      executedTests,
+      successRate,
+    };
+  };
+
   const handleCreateSuite = (data: {
     name: string;
     description: string;
-    parentId?: string;
+    parentId?: number;
   }) => {
-    // 新しいスイートの作成処理
     const newSuite = {
       name: data.name,
       description: data.description,
-      children: [],
+      parentId: data.parentId,
     };
     useTestSuiteStore.getState().addTestSuite(newSuite);
     setCreateModalOpen(false);
@@ -347,40 +385,56 @@ export default function TestSuitesPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {selectedSuite.name}
-                    </h2>
-                    <p className="text-gray-600 mt-1">
-                      {selectedSuite.description}
-                    </p>
+                    {/* 選択中のスイートまたは子スイートの情報を表示 */}
+                    {(() => {
+                      const info = getSelectedSuiteInfo();
+                      return info ? (
+                        <>
+                          <h2 className="text-xl font-semibold text-gray-900">
+                            {info.name}
+                          </h2>
+                          <p className="text-gray-600 mt-1">
+                            {info.description}
+                          </p>
+                        </>
+                      ) : null;
+                    })()}
                   </div>
                   <button className="text-gray-400 hover:text-gray-600">
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-500">総テストケース</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">
-                      {selectedSuite.children.reduce(
-                        (acc: number, child: TestSuiteChild) =>
-                          acc + child.testCases,
-                        0
-                      )}
-                    </p>
-                  </div>
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-500">実行済み</p>
-                    <p className="text-2xl font-semibold text-green-600 mt-1">
-                      15
-                    </p>
-                  </div>
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-500">成功率</p>
-                    <p className="text-2xl font-semibold text-blue-600 mt-1">
-                      85%
-                    </p>
-                  </div>
+                  {(() => {
+                    const info = getSelectedSuiteInfo();
+                    const stats = info
+                      ? calculateTestStats(info.testCases)
+                      : { totalTests: 0, executedTests: 0, successRate: 0 };
+                    return (
+                      <>
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-500">
+                            総テストケース
+                          </p>
+                          <p className="text-2xl font-semibold text-gray-900 mt-1">
+                            {stats.totalTests}
+                          </p>
+                        </div>
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-500">実行済み</p>
+                          <p className="text-2xl font-semibold text-green-600 mt-1">
+                            {stats.executedTests}
+                          </p>
+                        </div>
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-500">成功率</p>
+                          <p className="text-2xl font-semibold text-blue-600 mt-1">
+                            {stats.successRate}%
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 

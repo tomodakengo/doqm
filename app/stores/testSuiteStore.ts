@@ -39,7 +39,7 @@ interface TestSuiteStore {
     isCreateModalOpen: boolean;
     // アクション
     setTestSuites: (suites: TestSuite[]) => void;
-    addTestSuite: (suite: Omit<TestSuite, 'id'>) => void;
+    addTestSuite: (suite: { name: string; description: string; parentId?: number }) => void;
     updateTestSuite: (id: number, suite: Partial<TestSuite>) => void;
     deleteTestSuite: (id: number) => void;
     selectSuite: (id: number, childId?: number) => void;
