@@ -1,4 +1,9 @@
 {
+  "name": "doqm",
+  "version": "0.0.1",
+  "description": "Doqm is a platform for manage test documents with AI assistant.",
+  "author": "Tomoda Kengo",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "next dev",
