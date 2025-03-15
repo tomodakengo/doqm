@@ -39,13 +39,27 @@ export const updateSession = async (request: NextRequest) => {
     // https://supabase.com/docs/guides/auth/server-side/nextjs
     const user = await supabase.auth.getUser();
 
-    // protected routes
-    if (request.nextUrl.pathname.startsWith("/protected") && user.error) {
+    // 認証不要のパスリスト
+    const publicPaths = [
+      "/",
+      "/sign-in",
+      "/sign-up",
+      "/forgot-password",
+      "/auth/callback",
+    ];
+
+    // パスが公開パスかどうかをチェック
+    const isPublicPath = publicPaths.some(path =>
+      request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + "/")
+    );
+
+    // 認証保護 - 公開パス以外のすべてのパスは認証が必要
+    if (!isPublicPath && user.error) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
     if (request.nextUrl.pathname === "/" && !user.error) {
-      return NextResponse.redirect(new URL("/protected", request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     return response;
