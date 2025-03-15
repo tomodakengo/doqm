@@ -1,33 +1,60 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { session } } = await supabase.auth.getSession()
 
   // 認証が必要なページへのアクセス制御
-  if (!session && req.nextUrl.pathname.startsWith('/test-suites')) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/sign-in'
-    return NextResponse.redirect(redirectUrl)
+  if (request.nextUrl.pathname.startsWith('/test-suites')) {
+    if (!session) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/sign-in'
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   // ログイン済みユーザーの認証ページへのアクセスを制御
-  if (session && (
-    req.nextUrl.pathname === '/sign-in' ||
-    req.nextUrl.pathname === '/sign-up'
-  )) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/test-suites'
-    return NextResponse.redirect(redirectUrl)
+  if (request.nextUrl.pathname === '/sign-in' || request.nextUrl.pathname === '/sign-up') {
+    if (session) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/test-suites'
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
-  return res
+  return response
 }
 
 export const config = {

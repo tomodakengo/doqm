@@ -1,5 +1,5 @@
-import { supabase } from '../supabase/client'
-import { CreateTestSuiteInput, TestSuite, UpdateTestSuiteInput } from '../types/test-suite'
+import { supabase } from '@/utils/supabase/client'
+import { CreateTestSuiteInput, TestSuite, UpdateTestSuiteInput } from '@/lib/types/test-suite'
 
 export async function getTestSuites() {
     const { data, error } = await supabase
