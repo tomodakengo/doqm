@@ -8,11 +8,13 @@ import {
   MoreVertical,
   File,
   Trash2,
+  PlayCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import CreateSuiteModal from "../components/test-suites/CreateSuiteModal";
 import TestCaseModal from "../components/test-cases/TestCaseModal";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import ExecuteTestModal from "../components/test-cases/ExecuteTestModal";
 import useTestSuiteStore, {
   TestSuite,
   TestSuiteChild,
@@ -86,6 +88,7 @@ export default function TestSuitesPage() {
     addTestCase,
     updateTestCase,
     deleteTestCase,
+    executeTestCase,
   } = useTestSuiteStore();
 
   // テストケースモーダルの状態
@@ -100,6 +103,12 @@ export default function TestSuitesPage() {
   // 削除確認モーダルの状態
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingTestCase, setDeletingTestCase] = useState<
+    TestCase | undefined
+  >();
+
+  // テストケース実行モーダルの状態
+  const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
+  const [executingTestCase, setExecutingTestCase] = useState<
     TestCase | undefined
   >();
 
@@ -166,6 +175,24 @@ export default function TestSuitesPage() {
     if (selectedSuiteId && deletingTestCase) {
       deleteTestCase(selectedSuiteId, deletingTestCase.id);
       setDeletingTestCase(undefined);
+    }
+  };
+
+  // テストケース実行モーダルを開く
+  const handleExecuteClick = (testCase: TestCase) => {
+    setExecutingTestCase(testCase);
+    setIsExecuteModalOpen(true);
+  };
+
+  // テストケース実行結果を記録
+  const handleExecuteSubmit = (data: {
+    status: "completed" | "failed";
+    comment: string;
+  }) => {
+    if (selectedSuiteId && executingTestCase) {
+      executeTestCase(selectedSuiteId, executingTestCase.id, data);
+      setIsExecuteModalOpen(false);
+      setExecutingTestCase(undefined);
     }
   };
 
@@ -358,6 +385,12 @@ export default function TestSuitesPage() {
                                 編集
                               </button>
                               <button
+                                onClick={() => handleExecuteClick(testCase)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                <PlayCircle className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => handleDeleteClick(testCase)}
                                 className="text-red-600 hover:text-red-900"
                               >
@@ -409,6 +442,16 @@ export default function TestSuitesPage() {
         title="テストケースの削除"
         message={`「${deletingTestCase?.name}」を削除してもよろしいですか？この操作は取り消せません。`}
         type="danger"
+      />
+
+      <ExecuteTestModal
+        isOpen={isExecuteModalOpen}
+        onClose={() => {
+          setIsExecuteModalOpen(false);
+          setExecutingTestCase(undefined);
+        }}
+        onSubmit={handleExecuteSubmit}
+        testCase={executingTestCase as TestCase}
       />
     </MainLayout>
   );

@@ -7,6 +7,11 @@ export interface TestCase {
     priority: 'high' | 'medium' | 'low';
     status: 'not_started' | 'in_progress' | 'completed' | 'failed';
     lastExecuted?: string;
+    executionHistory?: {
+        date: string;
+        status: 'completed' | 'failed';
+        comment: string;
+    }[];
 }
 
 export interface TestSuiteChild {
@@ -33,12 +38,17 @@ interface TestSuiteStore {
     addTestSuite: (suite: Omit<TestSuite, 'id'>) => void;
     updateTestSuite: (id: number, suite: Partial<TestSuite>) => void;
     deleteTestSuite: (id: number) => void;
-    selectSuite: (id: number | null) => void;
+    selectSuite: (id: number) => void;
     setCreateModalOpen: (isOpen: boolean) => void;
     // テストケース関連
     addTestCase: (suiteId: number, testCase: Omit<TestCase, 'id'>) => void;
-    updateTestCase: (suiteId: number, testCaseId: number, testCase: Partial<TestCase>) => void;
+    updateTestCase: (suiteId: number, testCaseId: number, updates: Partial<TestCase>) => void;
     deleteTestCase: (suiteId: number, testCaseId: number) => void;
+    executeTestCase: (
+        suiteId: number,
+        testCaseId: number,
+        result: { status: 'completed' | 'failed'; comment: string }
+    ) => void;
 }
 
 const useTestSuiteStore = create<TestSuiteStore>((set) => ({
@@ -83,7 +93,8 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
                 if (suite.id === suiteId) {
                     const newTestCase = {
                         ...testCase,
-                        id: Math.max(0, ...(suite.testCases?.map((tc) => tc.id) || [0])) + 1,
+                        id: Math.max(0, ...(suite.testCases?.map((tc) => tc.id) || [-1])) + 1,
+                        status: 'not_started' as const,
                     };
                     return {
                         ...suite,
@@ -94,14 +105,14 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
             }),
         })),
 
-    updateTestCase: (suiteId, testCaseId, updatedTestCase) =>
+    updateTestCase: (suiteId, testCaseId, updates) =>
         set((state) => ({
             testSuites: state.testSuites.map((suite) => {
-                if (suite.id === suiteId && suite.testCases) {
+                if (suite.id === suiteId) {
                     return {
                         ...suite,
-                        testCases: suite.testCases.map((tc) =>
-                            tc.id === testCaseId ? { ...tc, ...updatedTestCase } : tc
+                        testCases: suite.testCases?.map((tc) =>
+                            tc.id === testCaseId ? { ...tc, ...updates } : tc
                         ),
                     };
                 }
@@ -112,10 +123,41 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
     deleteTestCase: (suiteId, testCaseId) =>
         set((state) => ({
             testSuites: state.testSuites.map((suite) => {
-                if (suite.id === suiteId && suite.testCases) {
+                if (suite.id === suiteId) {
                     return {
                         ...suite,
-                        testCases: suite.testCases.filter((tc) => tc.id !== testCaseId),
+                        testCases: suite.testCases?.filter((tc) => tc.id !== testCaseId),
+                    };
+                }
+                return suite;
+            }),
+        })),
+
+    executeTestCase: (suiteId, testCaseId, result) =>
+        set((state) => ({
+            testSuites: state.testSuites.map((suite) => {
+                if (suite.id === suiteId) {
+                    return {
+                        ...suite,
+                        testCases: suite.testCases?.map((tc) => {
+                            if (tc.id === testCaseId) {
+                                const now = new Date().toISOString();
+                                return {
+                                    ...tc,
+                                    status: result.status,
+                                    lastExecuted: now,
+                                    executionHistory: [
+                                        ...(tc.executionHistory || []),
+                                        {
+                                            date: now,
+                                            status: result.status,
+                                            comment: result.comment,
+                                        },
+                                    ],
+                                };
+                            }
+                            return tc;
+                        }),
                     };
                 }
                 return suite;
