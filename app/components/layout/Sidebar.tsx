@@ -28,7 +28,7 @@ const Sidebar: FC<SidebarProps> = ({ className = "" }) => {
       className={`w-64 h-screen bg-white border-r border-gray-200 flex flex-col ${className}`}
     >
       <div className="p-6">
-        <h1 className="text-xl font-bold text-gray-800">TestDoc AI</h1>
+        <h1 className="text-xl font-bold text-gray-800">doqm</h1>
       </div>
 
       <nav className="flex-1 px-4">
