@@ -16,18 +16,34 @@ export const createClient = () => {
 						// サーバーサイドでは空を返す
 						return undefined;
 					}
-					return document.cookie
-						.split("; ")
-						.find((row) => row.startsWith(`${name}=`))
-						?.split("=")[1];
+					// Cookieを探索して値を取得
+					const cookies = document.cookie.split(";").map((c) => c.trim());
+					const cookie = cookies.find((c) => c.startsWith(`${name}=`));
+					if (!cookie) return undefined;
+					return decodeURIComponent(cookie.split("=")[1]);
 				},
 				set(name, value, options) {
 					if (isServer) return;
-					document.cookie = `${name}=${value}; path=${options?.path ?? "/"}`;
+					// 有効期限などのオプションを適切に設定
+					let cookie = `${name}=${encodeURIComponent(value)}; path=${options?.path ?? "/"}`;
+					if (options?.maxAge) {
+						cookie += `; max-age=${options.maxAge}`;
+					}
+					if (options?.domain) {
+						cookie += `; domain=${options.domain}`;
+					}
+					if (options?.sameSite) {
+						cookie += `; samesite=${options.sameSite}`;
+					}
+					if (options?.secure) {
+						cookie += "; secure";
+					}
+					document.cookie = cookie;
 				},
 				remove(name, options) {
 					if (isServer) return;
-					document.cookie = `${name}=; path=${options?.path ?? "/"}`;
+					// Cookieを削除するため、有効期限を過去に設定
+					document.cookie = `${name}=; path=${options?.path ?? "/"}; max-age=0`;
 				},
 			},
 		},
