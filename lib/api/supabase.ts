@@ -9,10 +9,9 @@ const getClientForAPI = async () => {
 		if (typeof window === "undefined") {
 			// サーバーサイドではAPI用クライアントを使用
 			return createAPIClient();
-		} else {
-			// クライアントサイドの場合（ブラウザ環境）
-			return createBrowserClient();
 		}
+		// クライアントサイドの場合（ブラウザ環境）
+		return createBrowserClient();
 	} catch (error) {
 		console.error("Supabaseクライアント作成エラー:", error);
 		// エラーが発生した場合、APIクライアントで代替

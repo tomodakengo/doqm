@@ -93,8 +93,8 @@ const Sidebar: FC<SidebarProps> = ({ className = "" }) => {
 					<div className="animate-pulse flex items-center">
 						<div className="w-8 h-8 rounded-full bg-gray-200" />
 						<div className="ml-3 space-y-1">
-							<div className="h-2 w-24 bg-gray-200 rounded"></div>
-							<div className="h-2 w-32 bg-gray-200 rounded"></div>
+							<div className="h-2 w-24 bg-gray-200 rounded" />
+							<div className="h-2 w-32 bg-gray-200 rounded" />
 						</div>
 					</div>
 				) : user ? (
