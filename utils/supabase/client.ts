@@ -3,7 +3,7 @@ import { createBrowserClient } from "@supabase/ssr";
 // Pages Router用のクライアント
 export const createClient = () => {
 	// サーバーサイドでの実行を検出
-	const isServer = typeof window === 'undefined';
+	const isServer = typeof window === "undefined";
 
 	// クライアントサイド用のブラウザクライアント作成
 	return createBrowserClient(
@@ -17,19 +17,19 @@ export const createClient = () => {
 						return undefined;
 					}
 					return document.cookie
-						.split('; ')
+						.split("; ")
 						.find((row) => row.startsWith(`${name}=`))
-						?.split('=')[1]
+						?.split("=")[1];
 				},
 				set(name, value, options) {
 					if (isServer) return;
-					document.cookie = `${name}=${value}; path=${options?.path ?? '/'}`
+					document.cookie = `${name}=${value}; path=${options?.path ?? "/"}`;
 				},
 				remove(name, options) {
 					if (isServer) return;
-					document.cookie = `${name}=; path=${options?.path ?? '/'}`
+					document.cookie = `${name}=; path=${options?.path ?? "/"}`;
 				},
 			},
-		}
+		},
 	);
 };

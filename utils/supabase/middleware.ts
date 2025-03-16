@@ -35,7 +35,9 @@ export const updateSession = async (request: NextRequest) => {
 
 		// This will refresh session if expired - required for Server Components
 		// https://supabase.com/docs/guides/auth/server-side/nextjs
-		const { data: { user } } = await supabase.auth.getUser();
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
 
 		// 認証不要のパスリスト
 		const publicPaths = [
@@ -67,11 +69,17 @@ export const updateSession = async (request: NextRequest) => {
 		console.error("Supabase middleware error:", e);
 
 		// エラーが発生した場合もパブリックパスへのアクセスは許可する
-		const publicPaths = ["/", "/sign-in", "/sign-up", "/forgot-password", "/auth/callback"];
+		const publicPaths = [
+			"/",
+			"/sign-in",
+			"/sign-up",
+			"/forgot-password",
+			"/auth/callback",
+		];
 		const isPublicPath = publicPaths.some(
 			(path) =>
 				request.nextUrl.pathname === path ||
-				request.nextUrl.pathname.startsWith(`${path}/`)
+				request.nextUrl.pathname.startsWith(`${path}/`),
 		);
 
 		if (!isPublicPath) {
