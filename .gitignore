@@ -2,6 +2,7 @@
 
 # cursorrules
 .cursorrules
+.cursorignore
 
 # dependencies
 /node_modules
