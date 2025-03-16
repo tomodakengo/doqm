@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import * as LucideIcons from "lucide-react";
 import { useEffect, useState } from "react";
 import ConfirmDialog from "../components/common/ConfirmDialog";
