@@ -4,13 +4,19 @@ import { createClient as createAPIClient } from "@/utils/supabase/server-api";
 
 // クライアントを適切に取得する関数
 const getClientForAPI = async () => {
-    // サーバーサイドでのみ実行される場合
-    if (typeof window === 'undefined') {
-        // サーバーサイドではAPI用クライアントを使用
+    try {
+        // サーバーサイドでのみ実行される場合
+        if (typeof window === 'undefined') {
+            // サーバーサイドではAPI用クライアントを使用
+            return createAPIClient();
+        } else {
+            // クライアントサイドの場合（ブラウザ環境）
+            return createBrowserClient();
+        }
+    } catch (error) {
+        console.error('Supabaseクライアント作成エラー:', error);
+        // エラーが発生した場合、APIクライアントで代替
         return createAPIClient();
-    } else {
-        // クライアントサイドの場合（ブラウザ環境）
-        return createBrowserClient();
     }
 };
 
@@ -323,34 +329,63 @@ export async function getTeamMembers(teamId: string) {
 }
 
 export async function createTeam(data: { name: string; description?: string }) {
-    const supabase = await getSupabaseClient();
+    try {
+        console.log("Creating team with data:", data);
 
-    // チームを作成
-    const { data: team, error } = await supabase
-        .from("teams")
-        .insert([
+        const supabase = await getSupabaseClient();
+
+        // 現在のユーザーを取得
+        const userResponse = await supabase.auth.getUser();
+        console.log("User auth response:", userResponse);
+
+        // ユーザー情報がない場合はエラーを返す
+        if (!userResponse.data?.user?.id) {
+            const error = new Error("認証されていないユーザーです");
+            console.error("Authentication error:", error);
+            throw error;
+        }
+
+        const userId = userResponse.data.user.id;
+
+        // チームを作成
+        const { data: team, error } = await supabase
+            .from("teams")
+            .insert([
+                {
+                    name: data.name,
+                    description: data.description,
+                    created_by: userId
+                },
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Team creation error:", error);
+            throw error;
+        }
+
+        console.log("Team created:", team);
+
+        // 作成者を管理者として自動追加
+        const { error: memberError } = await supabase.from("team_members").insert([
             {
-                name: data.name,
-                description: data.description,
+                team_id: team.id,
+                user_id: userId,
+                role: "admin",
             },
-        ])
-        .select()
-        .single();
+        ]);
 
-    if (error) throw error;
+        if (memberError) {
+            console.error("Adding team member error:", memberError);
+            throw memberError;
+        }
 
-    // 作成者を管理者として自動追加
-    const { error: memberError } = await supabase.from("team_members").insert([
-        {
-            team_id: team.id,
-            user_id: (await supabase.auth.getUser()).data.user?.id,
-            role: "admin",
-        },
-    ]);
-
-    if (memberError) throw memberError;
-
-    return team;
+        return team;
+    } catch (error) {
+        console.error("Complete error in createTeam:", error);
+        throw error;
+    }
 }
 
 export async function updateTeam(

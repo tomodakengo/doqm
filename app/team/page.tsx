@@ -39,76 +39,79 @@ export default function TeamPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchTeams() {
-      try {
-        setLoading(true);
+  // チーム一覧を取得する関数
+  const fetchTeams = async () => {
+    try {
+      setLoading(true);
 
-        // ユーザーのチームを取得
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+      // ユーザーのチームを取得
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (!user) {
-          router.push("/sign-in");
-          return;
-        }
-
-        // チームを取得
-        const { data: userTeams, error } = await supabase
-          .from("team_members")
-          .select(
-            `
-            team_id,
-            role,
-            teams:team_id (
-              id,
-              name,
-              description,
-              created_at,
-              updated_at
-            )
-          `
-          )
-          .eq("user_id", user.id);
-
-        if (error) throw error;
-
-        // チームごとのメンバー数を取得
-        if (userTeams && userTeams.length > 0) {
-          const teamsWithRoles = await Promise.all(
-            userTeams.map(async (item: any) => {
-              const { count } = await supabase
-                .from("team_members")
-                .select("id", { count: "exact", head: true })
-                .eq("team_id", item.team_id);
-
-              return {
-                id: item.teams.id,
-                name: item.teams.name,
-                description: item.teams.description,
-                created_at: item.teams.created_at,
-                updated_at: item.teams.updated_at,
-                role: item.role,
-                members: count || 0,
-              } as Team;
-            })
-          );
-
-          setTeams(teamsWithRoles);
-        } else {
-          setTeams([]);
-        }
-      } catch (error) {
-        console.error("Error fetching teams:", error);
-      } finally {
-        setLoading(false);
+      if (!user) {
+        router.push("/sign-in");
+        return;
       }
-    }
 
+      // チームを取得
+      const { data: userTeams, error } = await supabase
+        .from("team_members")
+        .select(
+          `
+          team_id,
+          role,
+          teams:team_id (
+            id,
+            name,
+            description,
+            created_at,
+            updated_at
+          )
+        `
+        )
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // チームごとのメンバー数を取得
+      if (userTeams && userTeams.length > 0) {
+        const teamsWithRoles = await Promise.all(
+          userTeams.map(async (item: any) => {
+            const { count } = await supabase
+              .from("team_members")
+              .select("id", { count: "exact", head: true })
+              .eq("team_id", item.team_id);
+
+            return {
+              id: item.teams.id,
+              name: item.teams.name,
+              description: item.teams.description,
+              created_at: item.teams.created_at,
+              updated_at: item.teams.updated_at,
+              role: item.role,
+              members: count || 0,
+            } as Team;
+          })
+        );
+
+        setTeams(teamsWithRoles);
+      } else {
+        setTeams([]);
+      }
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      setError("チーム一覧の取得に失敗しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTeams();
   }, [supabase, router]);
 
@@ -117,58 +120,41 @@ export default function TeamPage() {
     description: string;
   }) => {
     try {
-      await createTeam(data);
-      router.refresh();
-      setIsCreateTeamModalOpen(false);
+      setError(null);
+      console.log("Creating team with data:", data);
 
-      // 最新のチーム一覧を再取得
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // 現在のユーザーが認証されているか確認
+      const authResponse = await supabase.auth.getUser();
+      const user = authResponse.data?.user;
 
-      if (user) {
-        const { data: userTeams } = await supabase
-          .from("team_members")
-          .select(
-            `
-            team_id,
-            role,
-            teams:team_id (
-              id,
-              name,
-              description,
-              created_at,
-              updated_at
-            )
-          `
-          )
-          .eq("user_id", user.id);
-
-        if (userTeams && userTeams.length > 0) {
-          const updatedTeams = await Promise.all(
-            userTeams.map(async (item: any) => {
-              const { count } = await supabase
-                .from("team_members")
-                .select("id", { count: "exact", head: true })
-                .eq("team_id", item.team_id);
-
-              return {
-                id: item.teams.id,
-                name: item.teams.name,
-                description: item.teams.description,
-                created_at: item.teams.created_at,
-                updated_at: item.teams.updated_at,
-                role: item.role,
-                members: count || 0,
-              } as Team;
-            })
-          );
-
-          setTeams(updatedTeams);
-        }
+      if (!user) {
+        console.error("No authenticated user found");
+        setError("認証情報が見つかりません。再ログインしてください。");
+        router.push("/sign-in");
+        return;
       }
-    } catch (error) {
-      console.error("Error creating team:", error);
+
+      // チーム作成（これがサーバーサイドで実行される）
+      try {
+        await createTeam({
+          name: data.name,
+          description: data.description,
+        });
+
+        router.refresh();
+        setIsCreateTeamModalOpen(false);
+
+        // チーム一覧の再取得は成功したらすぐに行う
+        fetchTeams();
+      } catch (createError: any) {
+        console.error("Team creation API error:", createError);
+        setError(
+          `チーム作成に失敗しました: ${createError.message || "不明なエラー"}`
+        );
+      }
+    } catch (error: any) {
+      console.error("Error in handleCreateTeam:", error);
+      setError(`エラーが発生しました: ${error.message || "不明なエラー"}`);
     }
   };
 
@@ -192,6 +178,12 @@ export default function TeamPage() {
             チームを作成
           </Button>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-2">
+            {error}
+          </div>
+        )}
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
