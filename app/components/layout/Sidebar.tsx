@@ -4,6 +4,7 @@ import { signOutAction } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import {
 	BarChart2,
+	Building2Icon,
 	FileText,
 	FolderTree,
 	LayoutDashboard,
@@ -56,6 +57,7 @@ const Sidebar: FC<SidebarProps> = ({ className = "" }) => {
 		{ icon: BarChart2, label: "レポート", href: "/reports" },
 		{ icon: Users, label: "チーム", href: "/team" },
 		{ icon: Settings, label: "設定", href: "/settings" },
+		{ icon: Building2Icon, label: "テナント", href: "/tenants" },
 	];
 
 	const handleSignOut = async () => {
