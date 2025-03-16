@@ -13,6 +13,7 @@ import useTestSuiteStore, {
   type TestSuiteChild,
   type TestCase,
 } from "../stores/testSuiteStore";
+import { Button } from "@/components/ui/button";
 
 // 初期データ
 const initialTestSuites: TestSuite[] = [
@@ -307,14 +308,10 @@ export default function TestSuitesPage() {
               テストスイートとテストケースの管理
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setCreateModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
-          >
+          <Button onClick={() => setCreateModalOpen(true)}>
             <LucideIcons.Plus className="w-5 h-5 mr-2" />
             新規スイート作成
-          </button>
+          </Button>
         </div>
 
         {/* メインコンテンツ */}
@@ -464,13 +461,10 @@ export default function TestSuitesPage() {
                   <h3 className="font-semibold text-gray-900">
                     テストケース一覧
                   </h3>
-                  <button
-                    onClick={handleCreateTestCase}
-                    className="text-blue-600 hover:text-blue-700 inline-flex items-center"
-                  >
+                  <Button onClick={handleCreateTestCase} variant="link">
                     <LucideIcons.Plus className="w-4 h-4 mr-1" />
                     テストケース追加
-                  </button>
+                  </Button>
                 </div>
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -535,30 +529,37 @@ export default function TestSuitesPage() {
                           </td>
                           <td className="px-6 py-4 text-right text-sm font-medium">
                             <div className="flex items-center justify-end space-x-3">
-                              <button
+                              <Button
                                 onClick={() => handleExecuteClick(testCase)}
+                                variant="ghost"
+                                size="icon"
                                 className="text-green-600 hover:text-green-900"
                               >
                                 <LucideIcons.PlayCircle className="w-4 h-4" />
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => handleHistoryClick(testCase)}
+                                variant="ghost"
+                                size="icon"
                                 className="text-blue-600 hover:text-blue-900"
                               >
                                 <LucideIcons.History className="w-4 h-4" />
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => handleEditTestCase(testCase)}
+                                variant="ghost"
                                 className="text-blue-600 hover:text-blue-900"
                               >
                                 編集
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => handleDeleteClick(testCase)}
+                                variant="ghost"
+                                size="icon"
                                 className="text-red-600 hover:text-red-900"
                               >
                                 <LucideIcons.Trash2 className="w-4 h-4" />
-                              </button>
+                              </Button>
                             </div>
                           </td>
                         </tr>

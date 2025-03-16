@@ -1,13 +1,13 @@
 "use client";
 
 import MainLayout from "../components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PlusCircle, Search, UserPlus, Users } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useState } from "react";
 import CreateTeamModal from "../components/team/CreateTeamModal";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function TeamPage() {
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
@@ -61,13 +61,13 @@ export default function TeamPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">チーム管理</h1>
           <Button onClick={() => setIsCreateTeamModalOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" />
+            <LucideIcons.PlusCircle className="w-4 h-4 mr-2" />
             チームを作成
           </Button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <LucideIcons.Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <Input className="pl-10" placeholder="チーム名で検索..." />
         </div>
 
@@ -80,7 +80,7 @@ export default function TeamPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                    <Users className="w-5 h-5" />
+                    <LucideIcons.Users className="w-5 h-5" />
                   </div>
                   <h3 className="text-lg font-semibold ml-3">{team.name}</h3>
                 </div>
@@ -104,7 +104,7 @@ export default function TeamPage() {
                   {team.members} メンバー
                 </span>
                 <Button variant="outline" size="sm">
-                  <UserPlus className="w-4 h-4 mr-1" />
+                  <LucideIcons.UserPlus className="w-4 h-4 mr-1" />
                   招待
                 </Button>
               </div>
