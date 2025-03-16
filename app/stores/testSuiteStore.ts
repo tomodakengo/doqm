@@ -182,19 +182,17 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
 								return child;
 							}),
 						};
-					} else {
-						const newTestCase = {
-							...testCase,
-							id:
-								Math.max(0, ...(suite.testCases?.map((tc) => tc.id) || [-1])) +
-								1,
-							status: "not_started" as const,
-						};
-						return {
-							...suite,
-							testCases: [...(suite.testCases || []), newTestCase],
-						};
 					}
+					const newTestCase = {
+						...testCase,
+						id:
+							Math.max(0, ...(suite.testCases?.map((tc) => tc.id) || [-1])) + 1,
+						status: "not_started" as const,
+					};
+					return {
+						...suite,
+						testCases: [...(suite.testCases || []), newTestCase],
+					};
 				}
 				return suite;
 			}),
@@ -219,14 +217,13 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
 								return child;
 							}),
 						};
-					} else {
-						return {
-							...suite,
-							testCases: suite.testCases?.map((tc) =>
-								tc.id === testCaseId ? { ...tc, ...updates } : tc,
-							),
-						};
 					}
+					return {
+						...suite,
+						testCases: suite.testCases?.map((tc) =>
+							tc.id === testCaseId ? { ...tc, ...updates } : tc,
+						),
+					};
 				}
 				return suite;
 			}),
@@ -251,12 +248,11 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
 								return child;
 							}),
 						};
-					} else {
-						return {
-							...suite,
-							testCases: suite.testCases?.filter((tc) => tc.id !== testCaseId),
-						};
 					}
+					return {
+						...suite,
+						testCases: suite.testCases?.filter((tc) => tc.id !== testCaseId),
+					};
 				}
 				return suite;
 			}),
@@ -297,30 +293,29 @@ const useTestSuiteStore = create<TestSuiteStore>((set) => ({
 								return child;
 							}),
 						};
-					} else {
-						return {
-							...suite,
-							testCases: suite.testCases?.map((tc) => {
-								if (tc.id === testCaseId) {
-									const now = new Date().toISOString();
-									return {
-										...tc,
-										status: result.status,
-										lastExecuted: now,
-										executionHistory: [
-											...(tc.executionHistory || []),
-											{
-												date: now,
-												status: result.status,
-												comment: result.comment,
-											},
-										],
-									};
-								}
-								return tc;
-							}),
-						};
 					}
+					return {
+						...suite,
+						testCases: suite.testCases?.map((tc) => {
+							if (tc.id === testCaseId) {
+								const now = new Date().toISOString();
+								return {
+									...tc,
+									status: result.status,
+									lastExecuted: now,
+									executionHistory: [
+										...(tc.executionHistory || []),
+										{
+											date: now,
+											status: result.status,
+											comment: result.comment,
+										},
+									],
+								};
+							}
+							return tc;
+						}),
+					};
 				}
 				return suite;
 			}),
