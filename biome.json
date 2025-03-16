@@ -4,6 +4,9 @@
 			"suspicious": {
 				"noArrayIndexKey": "off"
 			},
+			"a11y": {
+				"noLabelWithoutControl": "off"
+			},
 			"style": {
 				"useNamingConvention": {
 					"level": "off",
