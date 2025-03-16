@@ -10,8 +10,7 @@ export function SubmitButton({
 }: {
 	children: React.ReactNode;
 	pendingText?: string;
-	[key: string]: any;
-}): React.ReactNode {
+} & React.ButtonHTMLAttributes<HTMLButtonElement>): React.ReactNode {
 	const { pending } = useFormStatus();
 
 	return (
