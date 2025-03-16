@@ -1,20 +1,23 @@
 {
-	"linter": {
-		"rules": {
-			"suspicious": {
-				"noArrayIndexKey": "off"
-			},
-			"a11y": {
-				"noLabelWithoutControl": "off"
-			},
-			"style": {
-				"useNamingConvention": {
-					"level": "off",
-					"options": {
-						"strictCase": false
-					}
-				}
-			}
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "useKeyWithClickEvents": "off",
+        "useButtonType": "off"
+      },
+      "complexity": {
+        "noForEach": "off",
+        "useOptionalChain": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off"
+      }
+    }
+  }
 }

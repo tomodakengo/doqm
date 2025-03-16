@@ -151,7 +151,7 @@ export default function Home() {
 						</div>
 					</div>
 					<div className="mt-8 pt-8 border-t border-gray-800 text-center">
-						<p>&copy; 2024 TestDoc AI. All rights reserved.</p>
+						<p>&copy; 2025 doqm. All rights reserved.</p>
 					</div>
 				</div>
 			</footer>
