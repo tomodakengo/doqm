@@ -42,19 +42,51 @@ export async function getTenants() {
 // ユーザーが所属するテナント一覧を取得
 export async function getUserTenants(userId: string) {
 	const supabase = await getSupabaseClient();
-	const { data, error } = await supabase
+
+	// ユーザーが所属するテナントユーザーレコードを取得
+	const { data: tenantUserRecords, error } = await supabase
 		.from("tenant_users")
 		.select(`
 			id,
 			role,
 			joined_at,
-			tenants:tenant_id(*)
+			tenant_id
 		`)
 		.eq("user_id", userId)
 		.order("joined_at", { ascending: false });
 
 	if (error) throw error;
-	return data;
+
+	// テナント情報が存在しない場合は空配列を返す
+	if (!tenantUserRecords || tenantUserRecords.length === 0) {
+		return [];
+	}
+
+	// テナントIDの配列を作成
+	const tenantIds = tenantUserRecords.map(record => record.tenant_id);
+
+	// テナント情報を取得
+	const { data: tenantsData, error: tenantsError } = await supabase
+		.from("tenants")
+		.select(`*`)
+		.in("id", tenantIds);
+
+	if (tenantsError) {
+		console.error("テナント情報取得エラー:", tenantsError);
+		return [];
+	}
+
+	// 結果をマージ
+	const result = tenantUserRecords.map(record => {
+		const tenantInfo = tenantsData?.find(tenant => tenant.id === record.tenant_id) || null;
+
+		return {
+			...record,
+			tenants: tenantInfo
+		};
+	});
+
+	return result;
 }
 
 // テナントの詳細を取得
@@ -73,28 +105,62 @@ export async function getTenantDetails(tenantId: string) {
 // テナントのユーザー一覧を取得
 export async function getTenantUsers(tenantId: string) {
 	const supabase = await getSupabaseClient();
-	const { data, error } = await supabase
+
+	// テナントユーザーの基本情報を取得
+	const { data: tenantUsers, error } = await supabase
 		.from("tenant_users")
 		.select(`
 			id,
 			role,
 			joined_at,
-			users:user_id(
-				id,
-				email,
-				profiles(
-					id,
-					username,
-					full_name,
-					avatar_url
-				)
-			)
+			user_id
 		`)
 		.eq("tenant_id", tenantId)
 		.order("role", { ascending: true });
 
 	if (error) throw error;
-	return data;
+
+	// ユーザー情報が存在しない場合は空配列を返す
+	if (!tenantUsers || tenantUsers.length === 0) {
+		return [];
+	}
+
+	// 各ユーザーのプロフィール情報を個別に取得
+	const userIds = tenantUsers.map(user => user.user_id);
+
+	// プロフィール情報を取得
+	const { data: profiles, error: profileError } = await supabase
+		.from("profiles")
+		.select(`
+			id,
+			username,
+			full_name,
+			avatar_url,
+			user_id:id,
+			email
+		`);
+
+	if (profileError) {
+		console.error("プロフィール情報取得エラー:", profileError);
+		// エラーがあっても処理を続行
+	}
+
+	// 結果をマージ
+	const result = tenantUsers.map(tenantUser => {
+		// プロフィール情報を検索（id = user_id）
+		const userProfile = profiles?.find(p => p.id === tenantUser.user_id) || null;
+
+		return {
+			...tenantUser,
+			users: {
+				id: tenantUser.user_id,
+				email: userProfile?.email || null,
+				profiles: userProfile ? [userProfile] : []
+			}
+		};
+	});
+
+	return result;
 }
 
 // テナントの作成
@@ -102,6 +168,7 @@ export async function createTenant(data: {
 	name: string;
 	description?: string;
 	plan?: string;
+	userId?: string;
 }) {
 	const supabase = await getSupabaseClient();
 
@@ -120,17 +187,22 @@ export async function createTenant(data: {
 
 	if (error) throw error;
 
-	// 現在のユーザー情報を取得
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	if (!user) throw new Error("ユーザーが認証されていません");
+	let userId = data.userId;
+
+	// ユーザーIDが指定されていない場合は現在のユーザー情報を取得
+	if (!userId) {
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) throw new Error("ユーザーが認証されていません");
+		userId = user.id;
+	}
 
 	// 作成者をテナント管理者として追加
 	const { error: userError } = await supabase.from("tenant_users").insert([
 		{
 			tenant_id: tenant.id,
-			user_id: user.id,
+			user_id: userId,
 			role: "admin",
 		},
 	]);
@@ -315,16 +387,37 @@ export async function updateTestSuiteTenant(
 // ユーザーのデフォルトテナントを取得
 export async function getUserDefaultTenant(userId: string) {
 	const supabase = await getSupabaseClient();
-	const { data, error } = await supabase
+
+	// ユーザーのテナント所属情報を取得
+	const { data: tenantUser, error } = await supabase
 		.from("tenant_users")
 		.select(`
-			tenants:tenant_id(*)
+			id,
+			tenant_id
 		`)
 		.eq("user_id", userId)
 		.order("joined_at", { ascending: false })
 		.limit(1)
 		.single();
 
-	if (error) throw error;
-	return data?.tenants;
+	if (error) {
+		console.error("デフォルトテナント取得エラー:", error);
+		return null;
+	}
+
+	if (!tenantUser) return null;
+
+	// テナント情報を取得
+	const { data: tenant, error: tenantError } = await supabase
+		.from("tenants")
+		.select(`*`)
+		.eq("id", tenantUser.tenant_id)
+		.single();
+
+	if (tenantError) {
+		console.error("テナント詳細取得エラー:", tenantError);
+		return null;
+	}
+
+	return tenant;
 }

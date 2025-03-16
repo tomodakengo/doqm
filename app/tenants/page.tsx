@@ -1,8 +1,7 @@
 "use client";
 
 import { getUserTenantsAction } from "@/app/actions/tenant";
-import MainLayout from "@components/layout/MainLayout";
-import { Button } from "@components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,237 +9,145 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@components/ui/card";
-import { formatDate } from "@/lib/utils";
-import * as LucideIcons from "lucide-react";
-import Link from "next/link";
+} from "@/app/components/ui/card";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-interface Tenant {
+type TenantInfo = {
   id: string;
   name: string;
-  description: string;
-  plan: string;
-  created_at: string;
-}
-
-interface TenantUser {
-  id: string;
+  description?: string;
   role: string;
-  joined_at: string;
-  tenants: Tenant;
-}
+};
 
 export default function TenantsPage() {
+  const router = useRouter();
+  const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tenants, setTenants] = useState<TenantUser[]>([]);
-
-  // テナント一覧を取得
-  const fetchTenants = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const result = await getUserTenantsAction();
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-
-      if (result.data) {
-        // データをTenantUser型に変換
-        const formattedTenants = result.data.map((t: any) => ({
-          id: t.id,
-          role: t.role,
-          joined_at: t.joined_at,
-          tenants: {
-            id: t.tenants?.id || "",
-            name: t.tenants?.name || "不明なテナント",
-            description: t.tenants?.description || "",
-            plan: t.tenants?.plan || "basic",
-            created_at: t.tenants?.created_at || new Date().toISOString(),
-          },
-        }));
-
-        setTenants(formattedTenants);
-      }
-    } catch (error: unknown) {
-      console.error("テナント一覧取得エラー:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "テナント一覧の取得中にエラーが発生しました";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchTenants();
-  }, []);
+    const loadTenants = async () => {
+      try {
+        setLoading(true);
+        const result = await getUserTenantsAction();
 
-  // 役割に応じたバッジのスタイルを返す
-  const getRoleBadgeStyle = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "bg-red-100 text-red-800";
-      case "manager":
-        return "bg-blue-100 text-blue-800";
-      case "user":
-        return "bg-green-100 text-green-800";
-      case "guest":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+        if (result.success && result.data) {
+          // データの整形
+          const formattedTenants = result.data.map((item) => ({
+            id: item.tenants?.id || "",
+            name: item.tenants?.name || "Unknown",
+            description: item.tenants?.description,
+            role: item.role,
+          }));
+
+          setTenants(formattedTenants);
+
+          // テナントが1つだけなら自動的にリダイレクト
+          if (formattedTenants.length === 1) {
+            router.push(`/${formattedTenants[0].id}/dashboard`);
+            return;
+          }
+
+          // テナントがない場合は自動的にテナント作成ページへリダイレクト
+          if (formattedTenants.length === 0) {
+            router.push("/tenants/create");
+            return;
+          }
+        } else {
+          setError(result.error || "テナント情報を取得できませんでした");
+        }
+      } catch (err) {
+        console.error("テナント取得エラー:", err);
+        setError("テナント情報の取得中にエラーが発生しました");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTenants();
+  }, [router]);
+
+  const handleTenantSelect = (tenantId: string) => {
+    router.push(`/${tenantId}/dashboard`);
   };
 
-  // 役割の日本語名を返す
-  const getRoleName = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "管理者";
-      case "manager":
-        return "マネージャー";
-      case "user":
-        return "ユーザー";
-      case "guest":
-        return "ゲスト";
-      default:
-        return role;
-    }
-  };
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8 flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4">テナント情報を読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // プランのバッジスタイルを返す
-  const getPlanBadgeStyle = (plan: string) => {
-    switch (plan) {
-      case "premium":
-        return "bg-purple-100 text-purple-800";
-      case "standard":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        </div>
+        <Button onClick={() => router.push("/sign-in")}>ログインに戻る</Button>
+      </div>
+    );
+  }
 
-  // プラン名を日本語に変換
-  const getPlanName = (plan: string) => {
-    switch (plan) {
-      case "premium":
-        return "プレミアム";
-      case "standard":
-        return "スタンダード";
-      default:
-        return "ベーシック";
-    }
-  };
+  if (tenants.length === 0) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center p-8 border rounded-lg shadow-sm">
+          <h1 className="text-2xl font-bold mb-4">所属テナントがありません</h1>
+          <p className="mb-6">
+            テナントを作成するか、テナント管理者に招待を依頼してください。
+          </p>
+          <Button onClick={() => router.push("/tenants/create")}>
+            新しいテナントを作成
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* ヘッダー部分 */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">テナント一覧</h1>
-            <p className="text-gray-600 mt-1">
-              所属しているテナントの一覧と管理
-            </p>
-          </div>
-          <Link href="/tenants/new">
-            <Button>
-              <LucideIcons.Plus className="w-5 h-5 mr-2" />
-              テナント作成
-            </Button>
-          </Link>
-        </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-8">テナント選択</h1>
 
-        {/* メインコンテンツ */}
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <LucideIcons.Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-          </div>
-        ) : error ? (
-          <div className="bg-red-50 p-6 rounded-lg text-red-600">
-            <div className="flex items-center">
-              <LucideIcons.AlertCircle className="w-6 h-6 mr-2" />
-              <p>{error}</p>
-            </div>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => fetchTenants()}
-            >
-              再読み込み
-            </Button>
-          </div>
-        ) : tenants.length === 0 ? (
-          <div className="bg-gray-50 p-12 rounded-lg text-center">
-            <LucideIcons.Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              テナントがありません
-            </h2>
-            <p className="text-gray-600 mb-6">
-              新しいテナントを作成して、テストスイートの管理を始めましょう
-            </p>
-            <Link href="/tenants/new">
-              <Button>
-                <LucideIcons.Plus className="w-5 h-5 mr-2" />
-                テナント作成
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {tenants.map((tenant) => (
+          <Card key={tenant.id} className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle>{tenant.name}</CardTitle>
+              <CardDescription>
+                {tenant.description || "説明がありません"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm bg-muted inline-block px-2 py-1 rounded">
+                あなたの役割: {tenant.role}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button
+                className="w-full"
+                onClick={() => handleTenantSelect(tenant.id)}
+              >
+                選択
               </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tenants.map((tenantUser) => (
-              <Card key={tenantUser.id} className="overflow-hidden">
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl">
-                      {tenantUser.tenants.name}
-                    </CardTitle>
-                    <div className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${getPlanBadgeStyle(
-                          tenantUser.tenants.plan
-                        )}`}
-                      >
-                        {getPlanName(tenantUser.tenants.plan)}
-                      </span>
-                    </div>
-                  </div>
-                  <CardDescription>
-                    {tenantUser.tenants.description || "説明なし"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-4">
-                  <div className="mt-2 flex items-center">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeStyle(
-                        tenantUser.role
-                      )}`}
-                    >
-                      {getRoleName(tenantUser.role)}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-2">
-                      {formatDate(tenantUser.joined_at)} に参加
-                    </span>
-                  </div>
-                </CardContent>
-                <CardFooter className="bg-gray-50 border-t border-gray-100 pt-3 pb-3 flex justify-end">
-                  <Link href={`/tenants/${tenantUser.tenants.id}`}>
-                    <Button variant="outline" size="sm">
-                      <LucideIcons.ArrowRight className="w-4 h-4 mr-1" />
-                      詳細を表示
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+            </CardFooter>
+          </Card>
+        ))}
       </div>
-    </MainLayout>
+
+      <div className="mt-8 text-center">
+        <Button
+          variant="outline"
+          onClick={() => router.push("/tenants/create")}
+        >
+          新しいテナントを作成
+        </Button>
+      </div>
+    </div>
   );
 }

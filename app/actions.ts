@@ -18,6 +18,118 @@ import { createClient } from "@/lib/supabase/server";
 import { encodedRedirect } from "@/lib/utils";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { acceptTenantInvitation, createTenant } from "@/lib/api/tenants";
+
+// 招待の詳細を確認するアクション
+export const checkInvitationAction = async (token: string) => {
+	const supabase = await createClient();
+
+	try {
+		// トークンの有効性を確認
+		const { data: invitation, error } = await supabase
+			.from("tenant_invitations")
+			.select("email, role, tenant_id, accepted, expires_at, tenants(name)")
+			.eq("token", token)
+			.eq("accepted", false)
+			.gt("expires_at", new Date().toISOString())
+			.single();
+
+		if (error) {
+			console.error("招待取得エラー:", error);
+			return { success: false, error: "招待情報を取得できません" };
+		}
+
+		if (!invitation) {
+			return { success: false, error: "無効な招待または期限切れです" };
+		}
+
+		return {
+			success: true,
+			data: {
+				email: invitation.email,
+				role: invitation.role,
+				tenantId: invitation.tenant_id,
+				tenantName: invitation.tenants?.name || "不明なテナント"
+			}
+		};
+
+	} catch (error: any) {
+		console.error("招待確認エラー:", error);
+		return { success: false, error: error.message || "招待情報の確認に失敗しました" };
+	}
+};
+
+// 招待付きでサインアップするアクション
+export const signUpWithInvitationAction = async (formData: FormData) => {
+	const email = formData.get("email")?.toString();
+	const password = formData.get("password")?.toString();
+	const token = formData.get("token")?.toString();
+
+	if (!email || !password || !token) {
+		return { success: false, error: "必須項目が不足しています" };
+	}
+
+	const supabase = await createClient();
+	const origin = (await headers()).get("origin");
+
+	try {
+		// 招待の有効性を確認
+		const invitationCheck = await checkInvitationAction(token);
+		if (!invitationCheck.success) {
+			return invitationCheck;
+		}
+
+		// 招待メールアドレスと入力メールアドレスが一致するか確認
+		if (invitationCheck.data.email && invitationCheck.data.email !== email) {
+			return { success: false, error: "招待されたメールアドレスと一致しません" };
+		}
+
+		// ユーザーを作成
+		const { data: authData, error: signUpError } = await supabase.auth.signUp({
+			email,
+			password,
+			options: {
+				emailRedirectTo: `${origin}/auth/callback`,
+				data: {
+					invitation_token: token,
+				}
+			}
+		});
+
+		if (signUpError) {
+			console.error("サインアップエラー:", signUpError);
+			return { success: false, error: signUpError.message };
+		}
+
+		// ユーザーが作成されていれば、招待を受け入れる処理（サインアップ確認後に実行されるように）
+		// 注意: 実際にはuserがいろいろな理由で空になっている可能性があるので、エラーとしては扱わない
+		if (authData.user) {
+			try {
+				// このタイミングで招待を受け入れるのは早すぎるので、
+				// 実際の招待受け入れ処理は認証コールバック後に行う
+
+				// データベースに処理待ちのフラグを立てる
+				await supabase.from("auth_metadata").insert({
+					user_id: authData.user.id,
+					metadata: {
+						invitation_token: token,
+						status: "pending"
+					}
+				});
+
+			} catch (acceptError: any) {
+				console.error("招待承諾エラー:", acceptError);
+				// ここでエラーが発生してもサインアップ自体は成功とする
+			}
+		}
+
+		return { success: true };
+
+	} catch (error: any) {
+		console.error("招待サインアップエラー:", error);
+		return { success: false, error: error.message || "サインアップ処理中にエラーが発生しました" };
+	}
+};
 
 export const signUpAction = async (formData: FormData) => {
 	const email = formData.get("email")?.toString();
@@ -33,7 +145,8 @@ export const signUpAction = async (formData: FormData) => {
 		);
 	}
 
-	const { error } = await supabase.auth.signUp({
+	// ユーザー作成（テナント作成はなし）
+	const { data: authData, error } = await supabase.auth.signUp({
 		email,
 		password,
 		options: {
@@ -45,6 +158,7 @@ export const signUpAction = async (formData: FormData) => {
 		console.error(`${error.code} ${error.message}`);
 		return encodedRedirect("error", "/sign-up", error.message);
 	}
+
 	return encodedRedirect(
 		"success",
 		"/sign-in",
@@ -57,7 +171,7 @@ export const signInAction = async (formData: FormData) => {
 	const password = formData.get("password") as string;
 	const supabase = await createClient();
 
-	const { error } = await supabase.auth.signInWithPassword({
+	const { data, error } = await supabase.auth.signInWithPassword({
 		email,
 		password,
 	});
@@ -66,7 +180,35 @@ export const signInAction = async (formData: FormData) => {
 		return encodedRedirect("error", "/sign-in", error.message);
 	}
 
-	return redirect("/test-suites");
+	// ユーザーのテナント情報を取得
+	try {
+		const { data: { user } } = await supabase.auth.getUser();
+		if (user) {
+			// テナントユーザー情報を取得
+			const { data: tenantUsers, count } = await supabase
+				.from("tenant_users")
+				.select("tenant_id", { count: "exact" })
+				.eq("user_id", user.id);
+
+			// テナントが存在しない場合はテナント作成ページへ
+			if (!tenantUsers || tenantUsers.length === 0) {
+				return redirect("/tenants/create");
+			}
+
+			// テナントが1つだけの場合は自動的にリダイレクト
+			if (tenantUsers.length === 1) {
+				return redirect(`/${tenantUsers[0].tenant_id}/dashboard`);
+			}
+
+			// 複数テナントがある場合はテナント選択画面へ
+			return redirect("/tenants");
+		}
+	} catch (err) {
+		console.error("テナント情報取得エラー:", err);
+	}
+
+	// エラーが発生した場合もテナント選択画面へ
+	return redirect("/tenants");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

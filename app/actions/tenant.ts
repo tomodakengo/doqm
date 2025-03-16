@@ -87,10 +87,25 @@ export async function createTenantAction(formData: FormData) {
 			};
 		}
 
+		// サーバー側でユーザーIDを取得
+		const supabase = await createClient();
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
+		if (!user) {
+			return {
+				success: false,
+				error: "ユーザーが認証されていません",
+				data: null,
+			};
+		}
+
 		const tenant = await createTenant({
 			name,
 			description,
 			plan,
+			userId: user.id, // ユーザーIDを明示的に渡す
 		});
 
 		return {
