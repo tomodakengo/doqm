@@ -2,8 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export const updateSession = async (request: NextRequest) => {
-	// This `try/catch` block is only here for the interactive tutorial.
-	// Feel free to remove once you have Supabase connected.
 	try {
 		// Create an unmodified response
 		let response = NextResponse.next({
@@ -37,7 +35,7 @@ export const updateSession = async (request: NextRequest) => {
 
 		// This will refresh session if expired - required for Server Components
 		// https://supabase.com/docs/guides/auth/server-side/nextjs
-		const user = await supabase.auth.getUser();
+		const { data: { user } } = await supabase.auth.getUser();
 
 		// 認証不要のパスリスト
 		const publicPaths = [
@@ -56,19 +54,30 @@ export const updateSession = async (request: NextRequest) => {
 		);
 
 		// 認証保護 - 公開パス以外のすべてのパスは認証が必要
-		if (!isPublicPath && user.error) {
+		if (!isPublicPath && !user) {
 			return NextResponse.redirect(new URL("/sign-in", request.url));
 		}
 
-		if (request.nextUrl.pathname === "/" && !user.error) {
+		if (request.nextUrl.pathname === "/" && user) {
 			return NextResponse.redirect(new URL("/test-suites", request.url));
 		}
 
 		return response;
 	} catch (e) {
-		// If you are here, a Supabase client could not be created!
-		// This is likely because you have not set up environment variables.
-		// Check out http://localhost:3000 for Next Steps.
+		console.error("Supabase middleware error:", e);
+
+		// エラーが発生した場合もパブリックパスへのアクセスは許可する
+		const publicPaths = ["/", "/sign-in", "/sign-up", "/forgot-password", "/auth/callback"];
+		const isPublicPath = publicPaths.some(
+			(path) =>
+				request.nextUrl.pathname === path ||
+				request.nextUrl.pathname.startsWith(`${path}/`)
+		);
+
+		if (!isPublicPath) {
+			return NextResponse.redirect(new URL("/sign-in", request.url));
+		}
+
 		return NextResponse.next({
 			request: {
 				headers: request.headers,
