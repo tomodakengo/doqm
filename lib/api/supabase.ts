@@ -1,37 +1,22 @@
-import { createClient as createServerClient } from "@/utils/supabase/server";
+import { Database } from "../types/database.types";
+import { createClient as createBrowserClient } from "@/utils/supabase/client";
+import { createClient as createAPIClient } from "@/utils/supabase/server-api";
 
-// APIルートまたはPagesルーター用の関数
+// クライアントを適切に取得する関数
 const getClientForAPI = async () => {
     // サーバーサイドでのみ実行される場合
     if (typeof window === 'undefined') {
-        // Pages Router APIルート用の対応
-        try {
-            // @supabase/supabaseのクライアントを使用
-            const { createClient: createStandardClient } = await import('@supabase/supabase-js');
-            return createStandardClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-            );
-        } catch (error) {
-            console.error('Supabaseクライアント作成エラー:', error);
-            throw error;
-        }
+        // サーバーサイドではAPI用クライアントを使用
+        return createAPIClient();
     } else {
         // クライアントサイドの場合（ブラウザ環境）
-        const { createClient: createBrowserClient } = await import('@/utils/supabase/client');
         return createBrowserClient();
     }
 };
 
-// Supabaseクライアントを適切に取得する関数
+// Supabaseクライアントを取得する関数
 async function getSupabaseClient() {
-    try {
-        // App Routerの場合はServer Clientを使用
-        return await createServerClient();
-    } catch (error) {
-        // Server Clientが使えない場合（Pages Router等）はAPIクライアントを使用
-        return await getClientForAPI();
-    }
+    return await getClientForAPI();
 }
 
 /**
