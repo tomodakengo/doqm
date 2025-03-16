@@ -13,8 +13,8 @@ export const updateSession = async (request: NextRequest) => {
 		});
 
 		const supabase = createServerClient(
-			process.env.NEXT_PUBLIC_SUPABASE_URL!,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+			process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
 			{
 				cookies: {
 					getAll() {
@@ -52,7 +52,7 @@ export const updateSession = async (request: NextRequest) => {
 		const isPublicPath = publicPaths.some(
 			(path) =>
 				request.nextUrl.pathname === path ||
-				request.nextUrl.pathname.startsWith(path + "/"),
+				request.nextUrl.pathname.startsWith(`${path}/`),
 		);
 
 		// 認証保護 - 公開パス以外のすべてのパスは認証が必要
