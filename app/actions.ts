@@ -14,8 +14,8 @@ import {
 	updateTestCase,
 	updateTestSuite,
 } from "@/lib/api/supabase";
-import { createClient } from "@/utils/supabase/server";
-import { encodedRedirect } from "@/utils/utils";
+import { createClient } from "@/lib/supabase/server";
+import { encodedRedirect } from "@/lib/utils";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 

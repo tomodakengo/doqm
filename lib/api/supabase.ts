@@ -1,5 +1,5 @@
-import { createClient as createBrowserClient } from "@/utils/supabase/client";
-import { createClient as createAPIClient } from "@/utils/supabase/server-api";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { createClient as createAPIClient } from "@/lib/supabase/server-api";
 import { Database } from "../types/database.types";
 
 // クライアントを適切に取得する関数

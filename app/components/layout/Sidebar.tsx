@@ -1,7 +1,7 @@
 "use client";
 
 import { signOutAction } from "@/app/actions";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import {
 	BarChart2,
 	FileText,

@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
 import { createTeam, getTeams } from "@/lib/api/supabase";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { PlusCircle, Search, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -194,7 +194,9 @@ export default function TeamPage() {
 						className="pl-10"
 						placeholder="チーム名で検索..."
 						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+							setSearchQuery(e.target.value)
+						}
 					/>
 				</div>
 

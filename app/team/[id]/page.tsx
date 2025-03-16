@@ -1,6 +1,8 @@
 "use client";
 
 import MainLayout from "@/app/components/layout/MainLayout";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -9,10 +11,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/app/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getTeamMembers } from "@/lib/api/supabase";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Edit, Trash2, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -270,7 +270,7 @@ export default function TeamDetailPage({
 		fetchTeamData();
 	}, [teamId, router, supabase, userId]);
 
-	const handleInviteMember = async (e: React.FormEvent) => {
+	const handleInviteMember = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
 		try {

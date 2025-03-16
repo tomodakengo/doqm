@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 // チームの詳細情報を取得するサーバーアクション
 export async function getTeamDetails(teamId: string) {
