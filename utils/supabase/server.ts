@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+// App Router (Server Components)用のクライアント
 export const createClient = async () => {
 	const cookieStore = await cookies();
 
