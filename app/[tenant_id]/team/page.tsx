@@ -21,13 +21,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MainLayout from "../../components/layout/MainLayout";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
-export default function TeamPage({
-  params,
-}: {
-  params: { tenant_id: string };
-}) {
-  const tenantId = params.tenant_id;
+export default function TeamPage() {
+  const params = useParams();
+  const tenantId = params.tenant_id as string;
   const [searchQuery, setSearchQuery] = useState("");
 
   // テナントID取得後の処理

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -32,14 +32,11 @@ import {
 import MainLayout from "../../../components/layout/MainLayout";
 import Link from "next/link";
 
-export default function TeamDetailPage({
-  params,
-}: {
-  params: { tenant_id: string; id: string };
-}) {
+export default function TeamDetailPage() {
   const router = useRouter();
-  const tenantId = params.tenant_id;
-  const teamId = params.id;
+  const params = useParams();
+  const tenantId = params.tenant_id as string;
+  const teamId = params.id as string;
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("members");
 

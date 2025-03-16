@@ -2,7 +2,7 @@ import { getTenantDetails } from "@/lib/api/tenants";
 import { redirect } from "next/navigation";
 import MainLayout from "../../components/layout/MainLayout";
 
-export default function DashboardPage({
+export default async function DashboardPage({
   params,
 }: {
   params: { tenant_id: string };

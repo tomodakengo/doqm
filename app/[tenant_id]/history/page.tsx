@@ -6,13 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainLayout from "../../components/layout/MainLayout";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useParams } from "next/navigation";
 
-export default function HistoryPage({
-  params,
-}: {
-  params: { tenant_id: string };
-}) {
-  const tenantId = params.tenant_id;
+export default function HistoryPage() {
+  const params = useParams();
+  const tenantId = params.tenant_id as string;
 
   // テナントID取得後の処理
   useEffect(() => {

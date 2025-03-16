@@ -14,14 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import MainLayout from "../../components/layout/MainLayout";
+import { useParams } from "next/navigation";
 
-export default function SettingsPage({
-  params,
-}: {
-  params: { tenant_id: string };
-}) {
+export default function SettingsPage() {
+  const params = useParams();
+  const tenantId = params.tenant_id as string;
   const [activeTab, setActiveTab] = useState("account");
-  const tenantId = params.tenant_id;
 
   // テナントID取得後の処理
   useEffect(() => {
