@@ -8,6 +8,7 @@ import MainLayout from "../components/layout/MainLayout";
 import ExecuteTestModal from "../components/test-cases/ExecuteTestModal";
 import TestCaseModal from "../components/test-cases/TestCaseModal";
 import TestHistoryModal from "../components/test-cases/TestHistoryModal";
+import TestVersionsModal from "../components/test-cases/TestVersionsModal";
 import CreateSuiteModal from "../components/test-suites/CreateSuiteModal";
 import useTestSuiteStore, {
 	type TestSuite,
@@ -126,6 +127,12 @@ export default function TestSuitesPage() {
 	// 履歴モーダルの状態
 	const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 	const [selectedHistoryTestCase, setSelectedHistoryTestCase] = useState<
+		TestCase | undefined
+	>();
+
+	// バージョン履歴モーダルの状態
+	const [isVersionsModalOpen, setIsVersionsModalOpen] = useState(false);
+	const [selectedVersionsTestCase, setSelectedVersionsTestCase] = useState<
 		TestCase | undefined
 	>();
 
@@ -295,6 +302,12 @@ export default function TestSuitesPage() {
 	const handleHistoryClick = (testCase: TestCase) => {
 		setSelectedHistoryTestCase(testCase);
 		setIsHistoryModalOpen(true);
+	};
+
+	// バージョン履歴モーダルを開く
+	const handleVersionsClick = (testCase: TestCase) => {
+		setSelectedVersionsTestCase(testCase);
+		setIsVersionsModalOpen(true);
 	};
 
 	return (
@@ -546,6 +559,14 @@ export default function TestSuitesPage() {
 																<LucideIcons.History className="w-4 h-4" />
 															</Button>
 															<Button
+																onClick={() => handleVersionsClick(testCase)}
+																variant="ghost"
+																size="icon"
+																className="text-purple-600 hover:text-purple-900"
+															>
+																<LucideIcons.Layers className="w-4 h-4" />
+															</Button>
+															<Button
 																onClick={() => handleEditTestCase(testCase)}
 																variant="ghost"
 																className="text-blue-600 hover:text-blue-900"
@@ -625,6 +646,15 @@ export default function TestSuitesPage() {
 					setSelectedHistoryTestCase(undefined);
 				}}
 				testCase={selectedHistoryTestCase as TestCase}
+			/>
+
+			<TestVersionsModal
+				isOpen={isVersionsModalOpen}
+				onClose={() => {
+					setIsVersionsModalOpen(false);
+					setSelectedVersionsTestCase(undefined);
+				}}
+				testCaseId={selectedVersionsTestCase?.id.toString() || ""}
 			/>
 		</MainLayout>
 	);

@@ -1,8 +1,6 @@
 import * as React from "react";
 
-const cn = (...classes: any[]) => {
-	return classes.filter(Boolean).join(" ");
-};
+import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<
 	HTMLTableElement,

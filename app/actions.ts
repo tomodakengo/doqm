@@ -1,8 +1,22 @@
 "use server";
 
+import {
+	createTestCase,
+	createTestSuite,
+	deleteTestCase,
+	deleteTestSuite,
+	executeTestCase,
+	getTestCaseVersion,
+	getTestCaseVersions,
+	getTestCases,
+	getTestSuiteChildren,
+	getTestSuites,
+	updateTestCase,
+	updateTestSuite,
+} from "@/lib/api/supabase";
 import { createClient } from "@/utils/supabase/server";
 import { encodedRedirect } from "@/utils/utils";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const signUpAction = async (formData: FormData) => {
@@ -131,3 +145,35 @@ export const signOutAction = async () => {
 	await supabase.auth.signOut();
 	return redirect("/sign-in");
 };
+
+/**
+ * テストケースのバージョン履歴を取得する
+ */
+export async function getTestCaseVersionHistory(testCaseId: string) {
+	try {
+		const versions = await getTestCaseVersions(testCaseId);
+		return { success: true, data: versions };
+	} catch (error) {
+		console.error("テストケースのバージョン履歴取得エラー:", error);
+		return {
+			success: false,
+			error: "テストケースのバージョン履歴の取得中にエラーが発生しました",
+		};
+	}
+}
+
+/**
+ * テストケースの特定バージョンを取得する
+ */
+export async function getSpecificTestCaseVersion(versionId: string) {
+	try {
+		const version = await getTestCaseVersion(versionId);
+		return { success: true, data: version };
+	} catch (error) {
+		console.error("テストケースバージョンの取得エラー:", error);
+		return {
+			success: false,
+			error: "テストケースバージョンの取得中にエラーが発生しました",
+		};
+	}
+}
